@@ -1,10 +1,10 @@
 /**
  * TRAINER REGISTRATION PRO - JavaScript Unifié Complet
- * ✅ FUSION COMPLÈTE : public-script.js + trainer-search-modern.js
+ * ✅ FUSION COMPLÈTE : public-script.js + trainer-search-modern.js + gestion avancée téléphones
  * ✅ ÉLIMINATION : Tous les doublons et conflits
  * ✅ CONSERVATION : Toutes les fonctionnalités
  * 
- * Version: 3.0 - Unifiée et optimisée
+ * Version: 4.0 - Unifiée et optimisée avec gestion téléphones internationaux
  */
 
 (function($) {
@@ -38,6 +38,33 @@
             },
             validation: {
                 timeout: null
+            },
+            phone: {
+                validCodes: [
+                    '1', '7', '20', '27', '30', '31', '32', '33', '34', '36', '39', '40', '41', '43', '44', '45', '46', '47', '48', '49',
+                    '51', '52', '53', '54', '55', '56', '57', '58', '60', '61', '62', '63', '64', '65', '66', '81', '82', '84', '86', '90', '91', '92', '93', '94', '95', '98',
+                    '212', '213', '216', '218', '220', '221', '222', '223', '224', '225', '226', '227', '228', '229', '230', '231', '232', '233', '234', '235', '236', '237', '238', '239', '240', '241', '242', '243', '244', '245', '246', '247', '248', '249', '250', '251', '252', '253', '254', '255', '256', '257', '258', '260', '261', '262', '263', '264', '265', '266', '267', '268', '269', '290', '291', '297', '298', '299',
+                    '350', '351', '352', '353', '354', '355', '356', '357', '358', '359', '370', '371', '372', '373', '374', '375', '376', '377', '378', '380', '381', '382', '383', '385', '386', '387', '389', '420', '421', '423', '590', '591', '592', '593', '594', '595', '596', '597', '598', '599',
+                    '670', '672', '673', '674', '675', '676', '677', '678', '679', '680', '681', '682', '683', '684', '685', '686', '687', '688', '689', '690', '691', '692', '850', '852', '853', '855', '856', '880', '886'
+                ],
+                countryNames: {
+                    '+33': 'France',
+                    '+1': 'États-Unis/Canada',
+                    '+44': 'Royaume-Uni',
+                    '+49': 'Allemagne',
+                    '+39': 'Italie',
+                    '+34': 'Espagne',
+                    '+41': 'Suisse',
+                    '+32': 'Belgique',
+                    '+31': 'Pays-Bas',
+                    '+212': 'Maroc',
+                    '+213': 'Algérie',
+                    '+216': 'Tunisie',
+                    '+262': 'La Réunion/Mayotte',
+                    '+590': 'Guadeloupe',
+                    '+594': 'Guyane',
+                    '+596': 'Martinique'
+                }
             }
         };
 
@@ -50,8 +77,15 @@
             prevBtn: $('#trpro-prev-step'),
             submitBtn: $('#trpro-submit-form'),
             messages: $('#trpro-form-messages'),
-            loading: $('#trpro-form-loading')
+            loading: $('#trpro-form-loading'),
+            // Éléments téléphone
+            countryCodeSelect: $('#trpro-country-code'),
+            customCodeInput: $('#trpro-custom-code'),
+            phoneInput: $('#trpro-phone')
         };
+
+        // ===== INJECTION DES STYLES POUR TÉLÉPHONE =====
+        injectPhoneStyles();
 
         // ===== INITIALISATION GLOBALE =====
         
@@ -63,6 +97,7 @@
             initCheckboxes();
             initFormAnimations();
             initRegionsValidation();
+            initAdvancedPhoneHandling(); // Nouveau système téléphone
             showStep(1);
             console.log('✅ Formulaire d\'inscription initialisé');
         }
@@ -81,6 +116,367 @@
 
         // Animations générales
         initGlobalAnimations();
+
+        // ===== GESTION AVANCÉE DES TÉLÉPHONES =====
+        
+        function initAdvancedPhoneHandling() {
+            if (!elements.countryCodeSelect.length || !elements.phoneInput.length) return;
+            
+            console.log('🚀 Initialisation du système téléphone avancé');
+            
+            // Gestion des indicatifs avec animation
+            elements.countryCodeSelect.on('change', function() {
+                handleCountryCodeChange($(this).val());
+            });
+            
+            // Validation en temps réel de l'indicatif personnalisé
+            elements.customCodeInput.on('input', function() {
+                handleCustomCodeInput($(this));
+            });
+            
+            // Formatage automatique du numéro
+            elements.phoneInput.on('input', function() {
+                handlePhoneInput($(this));
+            });
+            
+            // Validation complète au blur
+            elements.phoneInput.on('blur', function() {
+                validateCompletePhoneNumber();
+            });
+            
+            // Créer l'aperçu du numéro complet
+            createPhonePreview();
+        }
+
+        function handleCountryCodeChange(selectedValue) {
+            if (selectedValue === 'custom') {
+                showCustomCodeInput();
+                updatePhoneHelper('info', 'Saisissez votre indicatif pays (ex: +262 pour La Réunion)');
+                
+                setTimeout(() => {
+                    elements.customCodeInput.focus();
+                }, 150);
+                
+            } else {
+                hideCustomCodeInput();
+                elements.customCodeInput.val('');
+                updatePhoneHelper('info', `Saisissez votre numéro pour ${getCountryName(selectedValue)}`);
+                
+                if (elements.phoneInput.val()) {
+                    validateCompletePhoneNumber();
+                }
+            }
+            
+            updatePhonePreview();
+        }
+
+        function showCustomCodeInput() {
+            const $input = elements.customCodeInput;
+            
+            $input.css({
+                display: 'block',
+                opacity: '0',
+                transform: 'scale(0.95) translateX(-10px)'
+            }).prop('required', true);
+            
+            requestAnimationFrame(() => {
+                $input.css({
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    opacity: '1',
+                    transform: 'scale(1) translateX(0)'
+                });
+            });
+        }
+
+        function hideCustomCodeInput() {
+            const $input = elements.customCodeInput;
+            
+            $input.css({
+                opacity: '0',
+                transform: 'scale(0.95) translateX(-10px)'
+            }).prop('required', false);
+            
+            setTimeout(() => {
+                $input.hide();
+            }, 300);
+        }
+
+        function handleCustomCodeInput($input) {
+            let value = $input.val();
+            
+            // Ajouter + automatiquement si manquant
+            if (value && !value.startsWith('+')) {
+                value = '+' + value;
+            }
+            
+            // Garder seulement les chiffres et le +
+            value = value.replace(/[^\d+]/g, '');
+            
+            // Limiter la longueur (+ suivi de 1-4 chiffres)
+            if (value.length > 5) {
+                value = value.substring(0, 5);
+            }
+            
+            $input.val(value);
+            
+            // Validation en temps réel
+            validateCustomCode(value);
+            updatePhonePreview();
+        }
+
+        function validateCustomCode(code) {
+            const isValid = isValidCountryCode(code);
+            const $formGroup = elements.customCodeInput.closest('.trpro-form-group');
+            
+            $formGroup.removeClass('error success');
+            
+            if (code.length === 0) {
+                updatePhoneHelper('info', 'Saisissez votre indicatif pays (ex: +262)');
+                return;
+            }
+            
+            if (code.length === 1) {
+                updatePhoneHelper('info', 'Continuez à taper votre indicatif...');
+                return;
+            }
+            
+            if (isValid && code.length >= 2) {
+                $formGroup.addClass('success');
+                const countryName = getCountryName(code) || 'Pays détecté';
+                updatePhoneHelper('success', `✓ Indicatif "${code}" valide (${countryName})`);
+            } else {
+                $formGroup.addClass('error');
+                updatePhoneHelper('error', 'Indicatif invalide. Format: +XXX (1-4 chiffres)');
+            }
+        }
+
+        function handlePhoneInput($input) {
+            const countryCode = getCurrentCountryCode();
+            let value = $input.val();
+            
+            // Supprimer tout sauf les chiffres et espaces
+            value = value.replace(/[^\d\s]/g, '');
+            
+            // Formater selon le pays
+            const formatted = formatPhoneByCountry(value, countryCode);
+            $input.val(formatted);
+            
+            // Validation en temps réel
+            validatePhoneLength(value.replace(/\s/g, ''));
+            updatePhonePreview();
+        }
+
+        function formatPhoneByCountry(phone, countryCode) {
+            const digitsOnly = phone.replace(/\s/g, '');
+            const code = countryCode.replace('+', '');
+            
+            switch (code) {
+                case '33': // France
+                    return formatFrenchPhone(digitsOnly);
+                case '1': // USA/Canada
+                    return formatUSPhone(digitsOnly);
+                case '44': // UK
+                    return formatUKPhone(digitsOnly);
+                default:
+                    return formatGenericPhone(digitsOnly);
+            }
+        }
+
+        function formatFrenchPhone(digits) {
+            if (digits.length === 0) return '';
+            const formatted = digits.replace(/(\d{2})(?=\d)/g, '$1 ');
+            return formatted.substring(0, 14); // Limiter à 10 chiffres + espaces
+        }
+
+        function formatUSPhone(digits) {
+            if (digits.length === 0) return '';
+            
+            if (digits.length <= 3) {
+                return digits;
+            } else if (digits.length <= 6) {
+                return digits.slice(0, 3) + ' ' + digits.slice(3);
+            } else {
+                return digits.slice(0, 3) + ' ' + digits.slice(3, 6) + ' ' + digits.slice(6, 10);
+            }
+        }
+
+        function formatUKPhone(digits) {
+            if (digits.length === 0) return '';
+            
+            if (digits.length <= 4) {
+                return digits;
+            } else if (digits.length <= 7) {
+                return digits.slice(0, 4) + ' ' + digits.slice(4);
+            } else {
+                return digits.slice(0, 4) + ' ' + digits.slice(4, 7) + ' ' + digits.slice(7, 10);
+            }
+        }
+
+        function formatGenericPhone(digits) {
+            if (digits.length <= 8) {
+                return digits.replace(/(\d{2})(?=\d)/g, '$1 ');
+            } else {
+                return digits.replace(/(\d{3})(?=\d)/g, '$1 ');
+            }
+        }
+
+        function getCurrentCountryCode() {
+            if (elements.countryCodeSelect.val() === 'custom') {
+                return elements.customCodeInput.val() || '+';
+            }
+            return elements.countryCodeSelect.val();
+        }
+
+        function validatePhoneLength(digits) {
+            const $formGroup = elements.phoneInput.closest('.trpro-form-group');
+            
+            $formGroup.removeClass('error success');
+            
+            if (digits.length === 0) {
+                updatePhoneHelper('info', 'Saisissez votre numéro de téléphone');
+                return;
+            }
+            
+            if (digits.length < 7) {
+                updatePhoneHelper('error', `Numéro trop court (${digits.length}/7 minimum)`);
+                $formGroup.addClass('error');
+            } else if (digits.length > 15) {
+                updatePhoneHelper('error', `Numéro trop long (${digits.length}/15 maximum)`);
+                $formGroup.addClass('error');
+            } else {
+                $formGroup.addClass('success');
+                updatePhoneHelper('success', `✓ Numéro valide (${digits.length} chiffres)`);
+            }
+        }
+
+        function validateCompletePhoneNumber() {
+            const countryCode = getCurrentCountryCode();
+            const digits = elements.phoneInput.val().replace(/\s/g, '');
+            
+            const validationResult = validatePhoneByCountry(digits, countryCode);
+            
+            const $formGroup = elements.phoneInput.closest('.trpro-form-group');
+            $formGroup.removeClass('error success');
+            
+            if (validationResult.valid) {
+                $formGroup.addClass('success');
+                updatePhoneHelper('success', validationResult.message);
+            } else {
+                $formGroup.addClass('error');
+                updatePhoneHelper('error', validationResult.message);
+            }
+            
+            return validationResult.valid;
+        }
+
+        function validatePhoneByCountry(digits, countryCode) {
+            const code = countryCode.replace('+', '');
+            
+            switch (code) {
+                case '33': // France
+                    if (digits.length !== 9 && digits.length !== 10) {
+                        return { valid: false, message: 'Numéro français : 9 ou 10 chiffres requis' };
+                    }
+                    if (digits.length === 10 && !digits.startsWith('0')) {
+                        return { valid: false, message: 'Numéro français doit commencer par 0' };
+                    }
+                    return { valid: true, message: '✓ Numéro français valide' };
+                    
+                case '1': // USA/Canada
+                    if (digits.length !== 10) {
+                        return { valid: false, message: 'Numéro US/Canada : 10 chiffres requis' };
+                    }
+                    return { valid: true, message: '✓ Numéro US/Canada valide' };
+                    
+                case '44': // UK
+                    if (digits.length < 10 || digits.length > 11) {
+                        return { valid: false, message: 'Numéro UK : 10-11 chiffres requis' };
+                    }
+                    return { valid: true, message: '✓ Numéro UK valide' };
+                    
+                default:
+                    if (digits.length < 7 || digits.length > 15) {
+                        return { valid: false, message: 'Numéro international : 7-15 chiffres requis' };
+                    }
+                    return { valid: true, message: '✓ Numéro international valide' };
+            }
+        }
+
+        function createPhonePreview() {
+            const $formGroup = elements.phoneInput.closest('.trpro-form-group');
+            
+            let $preview = $('#trpro-phone-preview');
+            if ($preview.length === 0) {
+                $preview = $('<div id="trpro-phone-preview" class="trpro-phone-preview" style="display:none;">' +
+                           '<strong>Numéro complet :</strong> <span id="trpro-full-phone"></span></div>');
+                $formGroup.append($preview);
+            }
+        }
+
+        function updatePhonePreview() {
+            const $preview = $('#trpro-phone-preview');
+            const $fullPhoneSpan = $('#trpro-full-phone');
+            
+            if (!$preview.length || !$fullPhoneSpan.length) return;
+            
+            const countryCode = getCurrentCountryCode();
+            const phone = elements.phoneInput.val().replace(/\s/g, '');
+            
+            if (countryCode && countryCode !== '+' && phone) {
+                const fullNumber = `${countryCode} ${phone}`;
+                $fullPhoneSpan.text(fullNumber);
+                
+                if ($preview.is(':hidden')) {
+                    $preview.css({
+                        display: 'block',
+                        opacity: '0',
+                        transform: 'translateY(-10px)'
+                    });
+                    
+                    requestAnimationFrame(() => {
+                        $preview.css({
+                            transition: 'all 0.3s ease',
+                            opacity: '1',
+                            transform: 'translateY(0)'
+                        });
+                    });
+                }
+            } else {
+                $preview.hide();
+            }
+        }
+
+        function updatePhoneHelper(type, message) {
+            let $helper = $('#trpro-phone-helper');
+            
+            if ($helper.length === 0) {
+                const $formGroup = elements.phoneInput.closest('.trpro-form-group');
+                $helper = $('<div id="trpro-phone-helper" class="trpro-field-help"></div>');
+                $formGroup.append($helper);
+            }
+            
+            const icons = {
+                'info': 'fa-info-circle',
+                'success': 'fa-check-circle',
+                'error': 'fa-exclamation-circle'
+            };
+            
+            $helper.removeClass('info success error').addClass(type)
+                   .html(`<i class="fas ${icons[type]}"></i> ${message}`);
+        }
+
+        function isValidCountryCode(code) {
+            if (!code || !code.startsWith('+')) return false;
+            
+            const digits = code.substring(1);
+            if (!/^\d{1,4}$/.test(digits)) return false;
+            
+            return CONFIG.phone.validCodes.includes(digits);
+        }
+
+        function getCountryName(code) {
+            return CONFIG.phone.countryNames[code] || null;
+        }
 
         // ===== FORMULAIRE D'INSCRIPTION =====
         
@@ -280,14 +676,43 @@
                 });
             }
             
-            // Téléphone
+            // Téléphone avec nouvelle validation
+            const countryCode = getCurrentCountryCode();
             const phone = $step.find('#trpro-phone').val().trim();
+            
             if (!phone) {
                 errors.push({
                     field: 'phone',
                     selector: '#trpro-phone',
                     message: 'Le numéro de téléphone est obligatoire'
                 });
+            } else {
+                const phoneValidation = validatePhoneByCountry(phone.replace(/\s/g, ''), countryCode);
+                if (!phoneValidation.valid) {
+                    errors.push({
+                        field: 'phone',
+                        selector: '#trpro-phone',
+                        message: phoneValidation.message
+                    });
+                }
+            }
+            
+            // Vérifier l'indicatif personnalisé si sélectionné
+            if (countryCode === 'custom') {
+                const customCode = elements.customCodeInput.val();
+                if (!customCode) {
+                    errors.push({
+                        field: 'custom_country_code',
+                        selector: '#trpro-custom-code',
+                        message: 'L\'indicatif personnalisé est obligatoire'
+                    });
+                } else if (!isValidCountryCode(customCode)) {
+                    errors.push({
+                        field: 'custom_country_code',
+                        selector: '#trpro-custom-code',
+                        message: 'Indicatif pays invalide'
+                    });
+                }
             }
             
             // LinkedIn optionnel
@@ -924,12 +1349,6 @@
             return regex.test(email);
         }
 
-        function isValidPhone(phone) {
-            const cleanPhone = phone.replace(/[\s.-]/g, '');
-            const regex = /^(?:(?:\+|00)33|0)[1-9](?:[0-9]{8})$/;
-            return regex.test(cleanPhone);
-        }
-
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -974,14 +1393,8 @@
                     break;
                     
                 case 'phone':
-                    if ($field.prop('required') && !value) {
-                        isValid = false;
-                        errorMessage = 'Téléphone obligatoire';
-                    } else if (value && !isValidPhone(value)) {
-                        isValid = false;
-                        errorMessage = 'Format téléphone invalide';
-                    }
-                    break;
+                    // Validation gérée par le système avancé
+                    return;
                     
                 case 'experience':
                     if ($field.prop('required') && !value) {
@@ -1327,27 +1740,6 @@
             showMessage('error', errorMessage);
         }
 
-        function handleSearchTag() {
-            const searchTerm = $(this).data('search');
-            const category = $(this).data('category');
-            
-            $('#trpro-trainer-search-input, #trpro-live-search').val(searchTerm);
-            if (category && category !== 'all') {
-                $('#trpro-specialty-filter').val(category);
-            }
-            
-            performSearch();
-        }
-
-        function handleModalClose(e) {
-            if (e.target === this || $(e.target).hasClass('trpro-modal-close')) {
-                $('.trpro-modal-overlay').fadeOut(300, function() {
-                    $(this).remove();
-                });
-                $('body').removeClass('modal-open');
-            }
-        }
-
         // ===== ANIMATIONS =====
         
         function initFormAnimations() {
@@ -1417,7 +1809,11 @@
             // Informations personnelles
             addSummaryItem($summary, 'Nom complet', `${$('#trpro-first-name').val()} ${$('#trpro-last-name').val()}`);
             addSummaryItem($summary, 'Email', $('#trpro-email').val());
-            addSummaryItem($summary, 'Téléphone', $('#trpro-phone').val());
+            
+            // Téléphone avec indicatif
+            const countryCode = getCurrentCountryCode();
+            const phone = $('#trpro-phone').val();
+            addSummaryItem($summary, 'Téléphone', `${countryCode} ${phone}`);
             
             const company = $('#trpro-company').val();
             if (company) {
@@ -1474,6 +1870,45 @@
             $container.append($item);
         }
 
+        // ===== INJECTION DES STYLES POUR TÉLÉPHONE =====
+        
+        function injectPhoneStyles() {
+            const phoneStyles = `
+                <style>
+                .trpro-phone-preview {
+                    background: #f1f5f9;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    padding: 12px 16px;
+                    margin-top: 12px;
+                    font-family: 'Courier New', monospace;
+                    font-weight: 600;
+                    color: #475569;
+                    transition: all 0.3s ease;
+                }
+
+                .trpro-field-help {
+                    font-size: 13px;
+                    margin-top: 6px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    transition: all 0.3s ease;
+                }
+
+                .trpro-field-help.info { color: #3b82f6; }
+                .trpro-field-help.success { color: #10b981; }
+                .trpro-field-help.error { color: #ef4444; }
+
+                .trpro-custom-code-input {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                </style>
+            `;
+            
+            $('head').append(phoneStyles);
+        }
+
         // ===== DEBUG (Développement) =====
         
         if (window.location.hostname === 'localhost' || window.location.hostname.includes('dev')) {
@@ -1488,6 +1923,10 @@
                     $('.trpro-regions-counter').hide();
                     CONFIG.form.currentStep = 1;
                     showStep(1);
+                },
+                testPhone: (country, phone) => {
+                    elements.countryCodeSelect.val(country).trigger('change');
+                    elements.phoneInput.val(phone).trigger('input');
                 }
             };
             console.log('🛠️ Debug disponible: window.trainerDebug');

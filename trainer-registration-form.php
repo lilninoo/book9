@@ -141,41 +141,121 @@ if (!defined('ABSPATH')) {
                         <span class="trpro-checkmark"></span>
                         <label for="spec-admin">Administration Système</label>
                     </div>
-                    <div class="trpro-checkbox-item">
-                        <input type="checkbox" name="specialties[]" value="reseaux" id="spec-reseaux">
-                        <span class="trpro-checkmark"></span>
-                        <label for="spec-reseaux">Réseaux & Infrastructure</label>
-                    </div>
-                    <div class="trpro-checkbox-item">
-                        <input type="checkbox" name="specialties[]" value="cloud" id="spec-cloud">
-                        <span class="trpro-checkmark"></span>
-                        <label for="spec-cloud">Cloud Computing</label>
-                    </div>
-                    <div class="trpro-checkbox-item">
-                        <input type="checkbox" name="specialties[]" value="devops" id="spec-devops">
-                        <span class="trpro-checkmark"></span>
-                        <label for="spec-devops">DevOps & CI/CD</label>
-                    </div>
-                    <div class="trpro-checkbox-item">
-                        <input type="checkbox" name="specialties[]" value="securite" id="spec-securite">
-                        <span class="trpro-checkmark"></span>
-                        <label for="spec-securite">Sécurité Informatique</label>
-                    </div>
-                    <div class="trpro-checkbox-item">
-                        <input type="checkbox" name="specialties[]" value="telecoms" id="spec-telecoms">
-                        <span class="trpro-checkmark"></span>
-                        <label for="spec-telecoms">Télécommunications</label>
-                    </div>
-                    <div class="trpro-checkbox-item">
-                        <input type="checkbox" name="specialties[]" value="developpement" id="spec-dev">
-                        <span class="trpro-checkmark"></span>
-                        <label for="spec-dev">Développement</label>
-                    </div>
-                    <div class="trpro-checkbox-item">
-                        <input type="checkbox" name="specialties[]" value="bases-donnees" id="spec-db">
-                        <span class="trpro-checkmark"></span>
-                        <label for="spec-db">Bases de Données</label>
-                    </div>
+                        <!-- 🟦 Infrastructure & Réseaux -->
+                        <h4>Infrastructure & Réseaux</h4>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="reseaux" id="spec-reseaux">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-reseaux">Réseaux & Infrastructure</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="systemes" id="spec-systemes">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-systemes">Systèmes Linux & Windows</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="virtualisation" id="spec-virtualisation">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-virtualisation">Virtualisation (VMware, Hyper-V)</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="telecoms" id="spec-telecoms">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-telecoms">Télécommunications & VoIP</label>
+                        </div>
+                        
+                        <!-- 🟩 Cloud & DevOps -->
+                        <h4>Cloud & DevOps</h4>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="cloud" id="spec-cloud">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-cloud">Cloud Computing (AWS, Azure, GCP)</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="devops" id="spec-devops">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-devops">DevOps & CI/CD</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="conteneurs" id="spec-conteneurs">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-conteneurs">Conteneurs (Docker, Kubernetes)</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="automatisation" id="spec-automatisation">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-automatisation">Automatisation (Ansible, Terraform)</label>
+                        </div>
+                        
+                        <!-- 🟥 Sécurité & Conformité -->
+                        <h4>Sécurité & Conformité</h4>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="securite" id="spec-securite">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-securite">Sécurité Informatique</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="cybersecurite" id="spec-cybersecurite">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-cybersecurite">Cybersécurité & Gouvernance</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="pentest" id="spec-pentest">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-pentest">Pentest & Hacking Éthique</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="rgpd" id="spec-rgpd">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-rgpd">RGPD & Conformité</label>
+                        </div>
+                        
+                        <!-- 🟨 Développement & Data -->
+                        <h4>Développement & Données</h4>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="developpement" id="spec-developpement">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-developpement">Développement (Web, App, API)</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="bases-donnees" id="spec-bases-donnees">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-bases-donnees">Bases de Données (SQL, NoSQL)</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="data-science" id="spec-data-science">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-data-science">Data Science & Python</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="big-data" id="spec-big-data">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-big-data">Big Data & Architecture Data</label>
+                        </div>
+                        
+                        <!-- 🟪 Gestion, ITSM & Support -->
+                        <h4>Gestion & Support IT</h4>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="gestion-projet" id="spec-gestion-projet">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-gestion-projet">Gestion de Projet IT</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="itil" id="spec-itil">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-itil">ITIL & Supervision</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="support" id="spec-support">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-support">Support & Assistance Technique</label>
+                        </div>
+                        <div class="trpro-checkbox-item">
+                          <input type="checkbox" name="specialties[]" value="formation" id="spec-formation">
+                          <span class="trpro-checkmark"></span>
+                          <label for="spec-formation">Pédagogie & Transmission</label>
+                        </div>
+
                 </div>
                 <span class="trpro-error-message" id="trpro-specialties-error"></span>
             </div>

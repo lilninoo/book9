@@ -1,6 +1,6 @@
 <?php
 /**
- * Classe pour la partie publique du plugin - VERSION COMPLÈTE avec régions et anonymisation
+ * Classe pour la partie publique du plugin - VERSION CORRIGÉE avec expérience et téléphone
  * 
  * Fichier: includes/class-trainer-registration-public.php
  */
@@ -125,7 +125,7 @@ class TrainerRegistrationPublic {
     }
     
     /**
-     * ✅ NOUVEAU : Gestion robuste de l'AJAX avec régions
+     * ✅ CORRIGÉ : Gestion robuste de l'AJAX avec téléphone et expérience
      */
     public function handle_trainer_registration() {
         try {
@@ -137,8 +137,8 @@ class TrainerRegistrationPublic {
                 ));
             }
 
-            // Validation des données avec régions
-            $validation_result = $this->validate_form_data_with_regions($_POST, $_FILES);
+            // Validation des données avec régions et expérience
+            $validation_result = $this->validate_form_data_with_experience($_POST, $_FILES);
             if (!$validation_result['valid']) {
                 wp_send_json_error(array(
                     'message' => 'Données invalides. Veuillez corriger les erreurs.',
@@ -156,8 +156,8 @@ class TrainerRegistrationPublic {
                 ));
             }
 
-            // Préparation des données avec régions
-            $trainer_data = $this->prepare_trainer_data_with_regions($_POST, $files_result);
+            // Préparation des données avec téléphone et expérience
+            $trainer_data = $this->prepare_trainer_data_with_experience($_POST, $files_result);
             
             // Vérification email unique
             if ($this->email_exists($trainer_data['email'])) {
@@ -202,24 +202,28 @@ class TrainerRegistrationPublic {
     }
 
     /**
-     * ✅ NOUVEAU : Préparation des données avec régions
+     * ✅ NOUVEAU : Préparation des données avec téléphone et expérience
      */
-    private function prepare_trainer_data_with_regions($post_data, $files_result) {
+    private function prepare_trainer_data_with_experience($post_data, $files_result) {
         // Traitement des régions d'intervention
         $intervention_regions = '';
         if (isset($post_data['intervention_regions']) && is_array($post_data['intervention_regions'])) {
             $intervention_regions = implode(', ', array_map('sanitize_text_field', $post_data['intervention_regions']));
         }
 
+        // ✅ NOUVEAU : Traitement du téléphone complet
+        $phone_complete = $this->process_phone_number($post_data);
+
         return array(
             'first_name' => sanitize_text_field($post_data['first_name']),
             'last_name' => sanitize_text_field($post_data['last_name']),
             'email' => sanitize_email($post_data['email']),
-            'phone' => sanitize_text_field($post_data['phone']),
+            'phone' => $phone_complete, // ✅ CORRIGÉ : téléphone avec indicatif
             'company' => sanitize_text_field($post_data['company']),
             'linkedin_url' => esc_url_raw($post_data['linkedin_url'] ?? ''),
             'specialties' => implode(', ', array_map('sanitize_text_field', $post_data['specialties'])),
-            'intervention_regions' => $intervention_regions, // ✅ NOUVEAU
+            'intervention_regions' => $intervention_regions,
+            'experience_level' => sanitize_text_field($post_data['experience_level']), // ✅ NOUVEAU
             'availability' => sanitize_text_field($post_data['availability']),
             'hourly_rate' => sanitize_text_field($post_data['hourly_rate'] ?? ''),
             'experience' => sanitize_textarea_field($post_data['experience']),
@@ -235,9 +239,34 @@ class TrainerRegistrationPublic {
     }
 
     /**
-     * ✅ NOUVEAU : Validation avec régions
+     * ✅ NOUVEAU : Traitement du numéro de téléphone
      */
-    private function validate_form_data_with_regions($post_data, $files_data) {
+    private function process_phone_number($post_data) {
+        $country_code = sanitize_text_field($post_data['country_code'] ?? '+33');
+        $custom_code = sanitize_text_field($post_data['custom_country_code'] ?? '');
+        $phone = sanitize_text_field($post_data['phone'] ?? '');
+
+        // Si indicatif personnalisé, l'utiliser
+        if ($country_code === 'custom' && !empty($custom_code)) {
+            $country_code = $custom_code;
+        }
+
+        // S'assurer que l'indicatif commence par +
+        if (!empty($country_code) && !str_starts_with($country_code, '+')) {
+            $country_code = '+' . $country_code;
+        }
+
+        // Nettoyer le numéro (garder seulement les chiffres)
+        $phone = preg_replace('/[^\d]/', '', $phone);
+
+        // Retourner le numéro complet
+        return $country_code . ' ' . $phone;
+    }
+
+    /**
+     * ✅ NOUVEAU : Validation avec téléphone et expérience
+     */
+    private function validate_form_data_with_experience($post_data, $files_data) {
         $errors = array();
         
         // Champs obligatoires
@@ -247,7 +276,7 @@ class TrainerRegistrationPublic {
             'email' => 'L\'email est obligatoire',
             'phone' => 'Le téléphone est obligatoire',
             'experience' => 'L\'expérience est obligatoire',
-            'availability' => 'La disponibilité est obligatoire'
+            'experience_level' => 'Le niveau d\'expérience est obligatoire' // ✅ NOUVEAU
         );
 
         foreach ($required_fields as $field => $message) {
@@ -261,12 +290,28 @@ class TrainerRegistrationPublic {
             $errors[] = 'Format d\'email invalide';
         }
 
+        // ✅ NOUVEAU : Validation téléphone
+        if (!empty($post_data['phone'])) {
+            $phone = preg_replace('/[^\d]/', '', $post_data['phone']);
+            if (strlen($phone) < 8 || strlen($phone) > 15) {
+                $errors[] = 'Numéro de téléphone invalide';
+            }
+        }
+
+        // ✅ NOUVEAU : Validation niveau d'expérience
+        if (!empty($post_data['experience_level'])) {
+            $valid_levels = array('junior', 'intermediaire', 'senior', 'expert');
+            if (!in_array($post_data['experience_level'], $valid_levels)) {
+                $errors[] = 'Niveau d\'expérience invalide';
+            }
+        }
+
         // Validation spécialités
         if (empty($post_data['specialties']) || !is_array($post_data['specialties'])) {
             $errors[] = 'Veuillez sélectionner au moins une spécialité';
         }
 
-        // ✅ NOUVEAU : Validation régions d'intervention obligatoires
+        // Validation régions d'intervention obligatoires
         if (empty($post_data['intervention_regions']) || !is_array($post_data['intervention_regions'])) {
             $errors[] = 'Veuillez sélectionner au moins une zone d\'intervention';
         }
@@ -298,7 +343,7 @@ class TrainerRegistrationPublic {
     }
 
     /**
-     * ✅ NOUVEAU : Recherche avancée avec régions
+     * ✅ CORRIGÉ : Recherche avancée avec régions et expérience
      */
     public function handle_advanced_trainer_search() {
         if (!wp_verify_nonce($_POST['nonce'], 'trainer_registration_nonce')) {
@@ -327,7 +372,7 @@ class TrainerRegistrationPublic {
                 ));
             }
             
-            // ✅ Ajouter les noms anonymisés dans les résultats
+            // Ajouter les noms anonymisés dans les résultats
             foreach ($results['trainers'] as $trainer) {
                 $trainer->display_name = $this->get_anonymized_name($trainer->first_name, $trainer->last_name);
             }
@@ -344,7 +389,7 @@ class TrainerRegistrationPublic {
     }
 
     /**
-     * ✅ NOUVEAU : Logique de recherche avancée avec régions
+     * ✅ CORRIGÉ : Logique de recherche avancée avec régions et expérience
      */
     private function perform_advanced_trainer_search($params) {
         global $wpdb;
@@ -368,13 +413,13 @@ class TrainerRegistrationPublic {
             $sql_params[] = '%' . $wpdb->esc_like($params['specialty_filter']) . '%';
         }
         
-        // ✅ NOUVEAU : Filtre par région simple
+        // Filtre par région simple
         if (!empty($params['region_filter']) && $params['region_filter'] !== 'all') {
             $where_conditions[] = 'intervention_regions LIKE %s';
             $sql_params[] = '%' . $wpdb->esc_like($params['region_filter']) . '%';
         }
         
-        // ✅ NOUVEAU : Filtre par régions multiples
+        // Filtre par régions multiples
         if (!empty($params['multi_regions'])) {
             $region_conditions = array();
             foreach ($params['multi_regions'] as $region) {
@@ -392,22 +437,10 @@ class TrainerRegistrationPublic {
             $sql_params[] = $params['availability_filter'];
         }
         
-        // Filtre par expérience (basé sur la longueur du texte d'expérience)
+        // ✅ CORRIGÉ : Filtre par expérience basé sur experience_level
         if (!empty($params['experience_filter'])) {
-            switch ($params['experience_filter']) {
-                case 'junior':
-                    $where_conditions[] = 'CHAR_LENGTH(experience) < 500';
-                    break;
-                case 'intermediaire':
-                    $where_conditions[] = 'CHAR_LENGTH(experience) BETWEEN 500 AND 1000';
-                    break;
-                case 'senior':
-                    $where_conditions[] = 'CHAR_LENGTH(experience) BETWEEN 1000 AND 2000';
-                    break;
-                case 'expert':
-                    $where_conditions[] = 'CHAR_LENGTH(experience) > 2000';
-                    break;
-            }
+            $where_conditions[] = 'experience_level = %s';
+            $sql_params[] = $params['experience_filter'];
         }
         
         // Filtre par tarif horaire
@@ -485,11 +518,8 @@ class TrainerRegistrationPublic {
                 $trainer->cv_url = $upload_dir['baseurl'] . '/' . $trainer->cv_file;
             }
             
-            // ✅ NOUVEAU : Anonymiser le nom
+            // Anonymiser le nom
             $trainer->display_name = $this->get_anonymized_name($trainer->first_name, $trainer->last_name);
-            
-            // Nettoyer les données sensibles côté client (garder nom pour admin)
-            // Ne pas supprimer first_name et last_name car nécessaires pour l'anonymisation
         }
         
         return array(
@@ -503,7 +533,7 @@ class TrainerRegistrationPublic {
     }
 
     /**
-     * ✅ NOUVEAU : Générer le nom anonymisé
+     * Générer le nom anonymisé
      */
     private function get_anonymized_name($first_name, $last_name) {
         if (empty($last_name) || empty($first_name)) {
@@ -514,7 +544,7 @@ class TrainerRegistrationPublic {
     }
 
     /**
-     * ✅ NOUVEAU : Handler pour récupérer le profil détaillé
+     * Handler pour récupérer le profil détaillé
      */
     public function handle_get_trainer_profile() {
         if (!wp_verify_nonce($_POST['nonce'], 'trainer_registration_nonce')) {
@@ -548,6 +578,7 @@ class TrainerRegistrationPublic {
             'company' => $trainer->company,
             'specialties' => explode(', ', $trainer->specialties),
             'intervention_regions' => !empty($trainer->intervention_regions) ? explode(', ', $trainer->intervention_regions) : array(),
+            'experience_level' => $trainer->experience_level ?? 'intermediaire', // ✅ NOUVEAU
             'availability' => $trainer->availability,
             'hourly_rate' => $trainer->hourly_rate,
             'experience' => $trainer->experience,
@@ -562,7 +593,7 @@ class TrainerRegistrationPublic {
     }
 
     /**
-     * Recherche simple (héritée)
+     * ✅ CORRIGÉ : Recherche simple avec nouveaux filtres
      */
     public function handle_trainer_search() {
         if (!wp_verify_nonce($_POST['nonce'], 'trainer_registration_nonce')) {
@@ -570,8 +601,10 @@ class TrainerRegistrationPublic {
         }
         
         global $wpdb;
-        $search_term = sanitize_text_field($_POST['search_term']);
-        $specialty_filter = sanitize_text_field($_POST['specialty_filter']);
+        $search_term = sanitize_text_field($_POST['search_term'] ?? '');
+        $specialty_filter = sanitize_text_field($_POST['specialty_filter'] ?? '');
+        $region_filter = sanitize_text_field($_POST['region_filter'] ?? ''); // ✅ NOUVEAU
+        $experience_filter = sanitize_text_field($_POST['experience_filter'] ?? ''); // ✅ NOUVEAU
         $table_name = $wpdb->prefix . 'trainer_registrations';
         
         $where_clause = "WHERE status = 'approved'";
@@ -589,6 +622,18 @@ class TrainerRegistrationPublic {
         if (!empty($specialty_filter) && $specialty_filter !== 'all') {
             $where_clause .= " AND specialties LIKE %s";
             $params[] = '%' . $specialty_filter . '%';
+        }
+        
+        // ✅ NOUVEAU : Filtre par région
+        if (!empty($region_filter) && $region_filter !== 'all') {
+            $where_clause .= " AND intervention_regions LIKE %s";
+            $params[] = '%' . $region_filter . '%';
+        }
+        
+        // ✅ NOUVEAU : Filtre par expérience
+        if (!empty($experience_filter)) {
+            $where_clause .= " AND experience_level = %s";
+            $params[] = $experience_filter;
         }
         
         $query = "SELECT * FROM $table_name $where_clause ORDER BY created_at DESC LIMIT 20";
@@ -621,7 +666,9 @@ class TrainerRegistrationPublic {
             'html' => $html,
             'count' => count($trainers),
             'search_term' => $search_term,
-            'specialty_filter' => $specialty_filter
+            'specialty_filter' => $specialty_filter,
+            'region_filter' => $region_filter,
+            'experience_filter' => $experience_filter
         ));
     }
 
@@ -820,7 +867,8 @@ class TrainerRegistrationPublic {
             $message .= "Téléphone: " . $trainer_data['phone'] . "\n";
             $message .= "Entreprise: " . $trainer_data['company'] . "\n";
             $message .= "Spécialités: " . $trainer_data['specialties'] . "\n";
-            $message .= "Zones d'intervention: " . $trainer_data['intervention_regions'] . "\n"; // ✅ NOUVEAU
+            $message .= "Zones d'intervention: " . $trainer_data['intervention_regions'] . "\n";
+            $message .= "Niveau d'expérience: " . $trainer_data['experience_level'] . "\n"; // ✅ NOUVEAU
             $message .= "Statut: " . $trainer_data['status'] . "\n\n";
             $message .= "Voir dans l'admin: " . admin_url('admin.php?page=trainer-registration');
 

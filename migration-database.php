@@ -1,6 +1,6 @@
 <?php
 /**
- * Script de migration de la base de données - Ajout des régions d'intervention
+ * Script de migration de la base de données - CORRIGÉ avec experience_level
  * 
  * Fichier: includes/migration-database.php
  */
@@ -31,6 +31,11 @@ class TrainerRegistrationMigration {
         // Migration 1.1.0 : Ajout des régions d'intervention
         if (version_compare($current_version, '1.1.0', '<')) {
             $this->migrate_to_1_1_0();
+        }
+        
+        // ✅ NOUVEAU : Migration 1.2.0 : Ajout du niveau d'expérience
+        if (version_compare($current_version, '1.2.0', '<')) {
+            $this->migrate_to_1_2_0();
         }
         
         // Marquer comme migré
@@ -106,6 +111,103 @@ class TrainerRegistrationMigration {
     }
     
     /**
+     * ✅ NOUVEAU : Migration vers la version 1.2.0
+     * - Ajout de la colonne experience_level
+     * - Migration des données existantes basées sur l'expérience
+     */
+    private function migrate_to_1_2_0() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'trainer_registrations';
+        
+        error_log('Trainer Registration Pro: Migration vers 1.2.0 - Ajout du niveau d\'expérience');
+        
+        // Vérifier l'existence de la table
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+            error_log('Trainer Registration Pro: Table principale non trouvée, création...');
+            $this->create_main_table();
+            return;
+        }
+        
+        // 1. Ajouter la colonne experience_level
+        if (!$this->column_exists($table_name, 'experience_level')) {
+            $result = $wpdb->query("ALTER TABLE $table_name ADD COLUMN experience_level varchar(20) DEFAULT 'intermediaire' AFTER intervention_regions");
+            
+            if ($result === false) {
+                error_log('Trainer Registration Pro: Erreur lors de l\'ajout de la colonne experience_level: ' . $wpdb->last_error);
+            } else {
+                error_log('Trainer Registration Pro: Colonne experience_level ajoutée avec succès');
+                
+                // Ajouter un index pour les recherches
+                $wpdb->query("ALTER TABLE $table_name ADD INDEX idx_experience_level (experience_level)");
+                
+                // Migrer les niveaux d'expérience basés sur le texte existant
+                $this->migrate_experience_levels();
+            }
+        }
+        
+        // 2. Optimiser la table
+        $wpdb->query("OPTIMIZE TABLE $table_name");
+        
+        error_log('Trainer Registration Pro: Migration vers 1.2.0 terminée');
+    }
+    
+    /**
+     * ✅ NOUVEAU : Migrer les niveaux d'expérience basés sur le texte
+     */
+    private function migrate_experience_levels() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'trainer_registrations';
+        
+        // Récupérer tous les formateurs avec leur expérience
+        $trainers = $wpdb->get_results("SELECT id, experience FROM $table_name WHERE experience_level IS NULL OR experience_level = ''");
+        
+        foreach ($trainers as $trainer) {
+            $experience_text = strtolower($trainer->experience);
+            $experience_level = 'intermediaire'; // Par défaut
+            
+            // Analyser le texte pour déterminer le niveau
+            if (preg_match('/\b(15|16|17|18|19|20|\d{2})\s*(ans?|années?)\b/', $experience_text, $matches)) {
+                $years = intval($matches[1]);
+                if ($years >= 15) {
+                    $experience_level = 'expert';
+                } elseif ($years >= 7) {
+                    $experience_level = 'senior';
+                } elseif ($years >= 3) {
+                    $experience_level = 'intermediaire';
+                } else {
+                    $experience_level = 'junior';
+                }
+            } elseif (preg_match('/\b([5-9]|1[0-4])\s*(ans?|années?)\b/', $experience_text, $matches)) {
+                $years = intval($matches[1]);
+                if ($years >= 7) {
+                    $experience_level = 'senior';
+                } else {
+                    $experience_level = 'intermediaire';
+                }
+            } elseif (preg_match('/\b([1-2])\s*(ans?|années?)\b/', $experience_text)) {
+                $experience_level = 'junior';
+            } elseif (preg_match('/(expert|expertise|experte?|senior|lead|architect|directeur|manager|chef)/i', $experience_text)) {
+                $experience_level = 'expert';
+            } elseif (preg_match('/(junior|débutant|commence|début|apprenti)/i', $experience_text)) {
+                $experience_level = 'junior';
+            }
+            
+            // Mettre à jour le niveau
+            $wpdb->update(
+                $table_name,
+                array('experience_level' => $experience_level),
+                array('id' => $trainer->id),
+                array('%s'),
+                array('%d')
+            );
+        }
+        
+        error_log('Trainer Registration Pro: Migration des niveaux d\'expérience terminée pour ' . count($trainers) . ' formateur(s)');
+    }
+    
+    /**
      * Vérifier si une colonne existe dans une table
      */
     private function column_exists($table_name, $column_name) {
@@ -125,7 +227,7 @@ class TrainerRegistrationMigration {
     }
     
     /**
-     * Créer la table principale avec toutes les colonnes
+     * ✅ CORRIGÉ : Créer la table principale avec toutes les colonnes (y compris experience_level)
      */
     private function create_main_table() {
         global $wpdb;
@@ -138,10 +240,11 @@ class TrainerRegistrationMigration {
             first_name varchar(100) NOT NULL,
             last_name varchar(100) NOT NULL,
             email varchar(100) NOT NULL,
-            phone varchar(20) NOT NULL,
+            phone varchar(50) NOT NULL,
             company varchar(200),
             specialties text NOT NULL,
             intervention_regions text,
+            experience_level varchar(20) DEFAULT 'intermediaire',
             availability varchar(50),
             hourly_rate varchar(20),
             experience text NOT NULL,
@@ -160,7 +263,8 @@ class TrainerRegistrationMigration {
             KEY status (status),
             KEY created_at (created_at),
             KEY specialties (specialties(100)),
-            KEY intervention_regions (intervention_regions(100))
+            KEY intervention_regions (intervention_regions(100)),
+            KEY experience_level (experience_level)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -270,6 +374,15 @@ class TrainerRegistrationMigration {
             WHERE updated_at IS NULL OR updated_at = '0000-00-00 00:00:00'
         ");
         
+        // ✅ NOUVEAU : 5. Normaliser les niveaux d'expérience
+        $wpdb->query("
+            UPDATE $table_name 
+            SET experience_level = 'intermediaire' 
+            WHERE experience_level IS NULL 
+            OR experience_level = '' 
+            OR experience_level NOT IN ('junior', 'intermediaire', 'senior', 'expert')
+        ");
+        
         error_log('Trainer Registration Pro: Nettoyage des données inconsistantes terminé');
     }
     
@@ -286,7 +399,8 @@ class TrainerRegistrationMigration {
         $required_columns = array(
             'intervention_regions',
             'hourly_rate',
-            'bio'
+            'bio',
+            'experience_level' // ✅ NOUVEAU
         );
         
         foreach ($required_columns as $column) {
@@ -304,6 +418,17 @@ class TrainerRegistrationMigration {
         
         if ($trainers_without_regions > 0) {
             $issues[] = "$trainers_without_regions formateur(s) approuvé(s) sans région d'intervention";
+        }
+        
+        // ✅ NOUVEAU : Vérifier les formateurs sans niveau d'expérience
+        $trainers_without_level = $wpdb->get_var("
+            SELECT COUNT(*) FROM $table_name 
+            WHERE (experience_level IS NULL OR experience_level = '') 
+            AND status = 'approved'
+        ");
+        
+        if ($trainers_without_level > 0) {
+            $issues[] = "$trainers_without_level formateur(s) approuvé(s) sans niveau d'expérience";
         }
         
         // Vérifier les doublons d'email
@@ -340,7 +465,7 @@ class TrainerRegistrationMigration {
         $wpdb->query("CREATE TABLE $backup_table AS SELECT * FROM $table_name");
         
         // Supprimer les colonnes ajoutées (attention : perte de données)
-        $columns_to_remove = array('intervention_regions', 'hourly_rate', 'bio');
+        $columns_to_remove = array('intervention_regions', 'hourly_rate', 'bio', 'experience_level');
         
         foreach ($columns_to_remove as $column) {
             if ($this->column_exists($table_name, $column)) {
@@ -368,6 +493,7 @@ class TrainerRegistrationMigration {
             'trainers_with_regions' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE intervention_regions IS NOT NULL AND intervention_regions != ''"),
             'trainers_with_rates' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE hourly_rate IS NOT NULL AND hourly_rate != ''"),
             'trainers_with_bio' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE bio IS NOT NULL AND bio != ''"),
+            'trainers_with_experience_level' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE experience_level IS NOT NULL AND experience_level != ''"), // ✅ NOUVEAU
             'approved_trainers' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE status = 'approved'"),
             'db_version' => get_option('trainer_registration_db_version', '1.0.0')
         );
@@ -391,6 +517,19 @@ class TrainerRegistrationMigration {
         ");
         
         $stats['popular_regions'] = $popular_regions;
+        
+        // ✅ NOUVEAU : Statistiques par niveau d'expérience
+        $experience_stats = $wpdb->get_results("
+            SELECT experience_level, COUNT(*) as count
+            FROM $table_name
+            WHERE experience_level IS NOT NULL 
+            AND experience_level != ''
+            AND status = 'approved'
+            GROUP BY experience_level
+            ORDER BY count DESC
+        ");
+        
+        $stats['experience_levels'] = $experience_stats;
         
         return $stats;
     }
@@ -463,7 +602,18 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                 <tr><td>Avec régions</td><td><?php echo $stats['trainers_with_regions']; ?></td></tr>
                 <tr><td>Avec tarifs</td><td><?php echo $stats['trainers_with_rates']; ?></td></tr>
                 <tr><td>Avec bio</td><td><?php echo $stats['trainers_with_bio']; ?></td></tr>
+                <tr><td>Avec niveau d'expérience</td><td><?php echo $stats['trainers_with_experience_level']; ?></td></tr>
                 <tr><td>Approuvés</td><td><?php echo $stats['approved_trainers']; ?></td></tr>
+            </table>
+            
+            <h2>Niveaux d'expérience</h2>
+            <table class="widefat">
+                <?php foreach ($stats['experience_levels'] as $level): ?>
+                    <tr>
+                        <td><?php echo esc_html(ucfirst($level->experience_level)); ?></td>
+                        <td><?php echo $level->count; ?></td>
+                    </tr>
+                <?php endforeach; ?>
             </table>
             
             <h2>Régions populaires</h2>

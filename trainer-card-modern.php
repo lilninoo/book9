@@ -1,6 +1,6 @@
 <?php
 /**
- * Template carte formateur moderne avec nom anonymisé et régions
+ * Template carte formateur moderne CORRIGÉ - Sans ID, badges basés sur l'expérience
  * 
  * Fichier: public/partials/trainer-card-modern.php
  * Variable disponible: $trainer (objet avec les données du formateur)
@@ -13,9 +13,6 @@ if (!defined('ABSPATH')) {
 // Récupérer les paramètres de contact
 $contact_email = get_option('trainer_contact_email', get_option('admin_email'));
 $contact_phone = get_option('trainer_contact_phone', '');
-
-// Formater l'ID
-$trainer_id_formatted = str_pad($trainer->id, 4, '0', STR_PAD_LEFT);
 
 // ✅ ANONYMISATION DU NOM : Première lettre du nom + point + prénom complet
 $display_name = '';
@@ -57,24 +54,36 @@ $region_labels = array(
     'distanciel' => 'Distanciel'
 );
 
-// Calcul de l'ancienneté
-$registration_date = new DateTime($trainer->created_at);
-$now = new DateTime();
-$interval = $registration_date->diff($now);
+// ✅ NOUVEAU : Badge de niveau d'expérience basé sur experience_level
+$experience_level = $trainer->experience_level ?? 'intermediaire';
+$experience_badges = array(
+    'junior' => array(
+        'label' => 'Junior',
+        'class' => 'junior',
+        'icon' => 'fas fa-seedling',
+        'description' => '< 3 ans d\'expérience'
+    ),
+    'intermediaire' => array(
+        'label' => 'Intermédiaire',
+        'class' => 'intermediaire',
+        'icon' => 'fas fa-chart-line',
+        'description' => '3-7 ans d\'expérience'
+    ),
+    'senior' => array(
+        'label' => 'Senior',
+        'class' => 'senior',
+        'icon' => 'fas fa-award',
+        'description' => '7-15 ans d\'expérience'
+    ),
+    'expert' => array(
+        'label' => 'Expert',
+        'class' => 'expert',
+        'icon' => 'fas fa-crown',
+        'description' => '15+ ans d\'expérience'
+    )
+);
 
-// Badge de statut
-$status_badge = '';
-$status_class = '';
-if ($interval->days > 365) {
-    $status_badge = 'Expert';
-    $status_class = 'expert';
-} elseif ($interval->days > 90) {
-    $status_badge = 'Confirmé';
-    $status_class = 'confirmed';
-} else {
-    $status_badge = 'Nouveau';
-    $status_class = 'new';
-}
+$experience_badge = $experience_badges[$experience_level] ?? $experience_badges['intermediaire'];
 
 // Mapping des icônes par spécialité
 $specialty_icons = [
@@ -94,7 +103,8 @@ $specialty_icons = [
          itemtype="https://schema.org/Person"
          data-trainer-id="<?php echo esc_attr($trainer->id); ?>"
          data-specialties="<?php echo esc_attr($trainer->specialties); ?>"
-         data-regions="<?php echo esc_attr($trainer->intervention_regions ?? ''); ?>">
+         data-regions="<?php echo esc_attr($trainer->intervention_regions ?? ''); ?>"
+         data-experience-level="<?php echo esc_attr($experience_level); ?>">
     
     <!-- Card Header avec photo et badge -->
     <div class="trpro-card-header">
@@ -105,7 +115,7 @@ $specialty_icons = [
                 $photo_url = $upload_dir['baseurl'] . '/' . $trainer->photo_file;
                 ?>
                 <img src="<?php echo esc_url($photo_url); ?>" 
-                     alt="Photo du formateur #<?php echo $trainer_id_formatted; ?>" 
+                     alt="Photo du formateur <?php echo esc_attr($display_name); ?>" 
                      loading="lazy"
                      itemprop="image">
             <?php else: ?>
@@ -114,9 +124,11 @@ $specialty_icons = [
                 </div>
             <?php endif; ?>
             
-            <!-- Badge de statut -->
-            <div class="trpro-status-badge trpro-badge-<?php echo $status_class; ?>">
-                <span><?php echo $status_badge; ?></span>
+            <!-- ✅ Badge de niveau d'expérience -->
+            <div class="trpro-status-badge trpro-badge-<?php echo $experience_badge['class']; ?>" 
+                 title="<?php echo esc_attr($experience_badge['description']); ?>">
+                <i class="<?php echo $experience_badge['icon']; ?>"></i>
+                <span><?php echo $experience_badge['label']; ?></span>
             </div>
         </div>
         
@@ -140,12 +152,11 @@ $specialty_icons = [
     
     <!-- Card Body -->
     <div class="trpro-card-body">
-        <!-- ✅ Informations principales avec nom anonymisé -->
+        <!-- ✅ Informations principales avec nom anonymisé (SANS ID) -->
         <div class="trpro-trainer-identity">
             <h3 class="trpro-trainer-name" itemprop="name">
                 <?php echo esc_html($display_name); ?>
             </h3>
-            <div class="trpro-trainer-id">Formateur Expert #<?php echo $trainer_id_formatted; ?></div>
             
             <?php if (!empty($trainer->company)): ?>
                 <div class="trpro-trainer-company" itemprop="worksFor">
@@ -243,7 +254,7 @@ $specialty_icons = [
     <div class="trpro-card-footer">
         <div class="trpro-action-buttons">
             <?php if (!empty($contact_email)): ?>
-                <a href="mailto:<?php echo esc_attr($contact_email); ?>?subject=Contact formateur %23<?php echo $trainer_id_formatted; ?>&body=Bonjour,%0D%0A%0D%0AJe souhaite entrer en contact avec le formateur %23<?php echo $trainer_id_formatted; ?> (<?php echo esc_attr($display_name); ?>) concernant ses spécialités en <?php echo esc_attr($trainer->specialties); ?>.%0D%0A%0D%0ACordialement" 
+                <a href="mailto:<?php echo esc_attr($contact_email); ?>?subject=Contact formateur <?php echo esc_attr($display_name); ?>&body=Bonjour,%0D%0A%0D%0AJe souhaite entrer en contact avec le formateur <?php echo esc_attr($display_name); ?> concernant ses spécialités en <?php echo esc_attr($trainer->specialties); ?>.%0D%0A%0D%0ACordialement" 
                    class="trpro-btn trpro-btn-primary"
                    title="Contacter ce formateur">
                     <i class="fas fa-envelope"></i>
@@ -288,165 +299,49 @@ $specialty_icons = [
     </div>
 </article>
 
-<!-- ✅ Modal de profil détaillé améliorée -->
-<div class="trpro-modal-overlay" id="trpro-modal-<?php echo esc_attr($trainer->id); ?>" style="display: none;">
-    <div class="trpro-modal-container">
-        <div class="trpro-modal-header">
-            <div class="trpro-modal-title">
-                <div class="trpro-modal-avatar">
-                    <?php if (!empty($trainer->photo_file)): ?>
-                        <img src="<?php echo esc_url($upload_dir['baseurl'] . '/' . $trainer->photo_file); ?>" alt="Photo du formateur">
-                    <?php else: ?>
-                        <div class="trpro-modal-avatar-placeholder">
-                            <i class="fas fa-user-graduate"></i>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                <div class="trpro-modal-info">
-                    <h4><?php echo esc_html($display_name); ?></h4>
-                    <p>Formateur Expert #<?php echo $trainer_id_formatted; ?></p>
-                    <?php if (!empty($trainer->company)): ?>
-                        <p class="trpro-modal-company"><?php echo esc_html($trainer->company); ?></p>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <button class="trpro-modal-close" data-trainer-id="<?php echo esc_attr($trainer->id); ?>">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
-        <div class="trpro-modal-content">
-            <!-- Zones d'intervention complètes -->
-            <?php if (!empty($intervention_regions)): ?>
-                <div class="trpro-modal-section">
-                    <h5>
-                        <i class="fas fa-map-marker-alt"></i>
-                        Zones d'intervention
-                    </h5>
-                    <div class="trpro-modal-zones">
-                        <?php foreach ($intervention_regions as $region): 
-                            $region_label = $region_labels[$region] ?? ucfirst(str_replace('-', ' ', $region));
-                        ?>
-                            <span class="trpro-zone-chip">
-                                <i class="fas fa-map-pin"></i>
-                                <?php echo esc_html($region_label); ?>
-                            </span>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <div class="trpro-modal-section">
-                <h5>
-                    <i class="fas fa-cogs"></i>
-                    Compétences techniques
-                </h5>
-                <div class="trpro-detailed-specialties">
-                    <?php foreach ($specialties as $specialty): 
-                        $specialty = trim($specialty);
-                        if (!empty($specialty)):
-                            $icon = $specialty_icons[$specialty] ?? 'fas fa-cog';
-                            $label = ucfirst(str_replace('-', ' ', $specialty));
-                    ?>
-                        <div class="trpro-specialty-chip">
-                            <i class="<?php echo esc_attr($icon); ?>"></i>
-                            <span><?php echo esc_html($label); ?></span>
-                        </div>
-                    <?php 
-                        endif;
-                    endforeach; 
-                    ?>
-                </div>
-            </div>
-            
-            <!-- Disponibilité et tarif -->
-            <div class="trpro-modal-section">
-                <h5>
-                    <i class="fas fa-clock"></i>
-                    Disponibilité & Tarifs
-                </h5>
-                <div class="trpro-availability-info">
-                    <?php if (!empty($trainer->availability)): ?>
-                        <div class="trpro-info-item">
-                            <strong>Disponibilité :</strong>
-                            <span><?php echo esc_html(ucfirst(str_replace('-', ' ', $trainer->availability))); ?></span>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <?php if (!empty($trainer->hourly_rate)): ?>
-                        <div class="trpro-info-item">
-                            <strong>Tarif horaire :</strong>
-                            <span><?php echo esc_html($trainer->hourly_rate); ?></span>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-            
-            <?php if (!empty($trainer->experience)): ?>
-                <div class="trpro-modal-section">
-                    <h5>
-                        <i class="fas fa-briefcase"></i>
-                        Expérience professionnelle
-                    </h5>
-                    <div class="trpro-experience-full">
-                        <?php echo nl2br(esc_html($trainer->experience)); ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            
-            <?php if (!empty($trainer->bio)): ?>
-                <div class="trpro-modal-section">
-                    <h5>
-                        <i class="fas fa-user"></i>
-                        Présentation
-                    </h5>
-                    <div class="trpro-bio-full">
-                        <?php echo nl2br(esc_html($trainer->bio)); ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            
-            <div class="trpro-modal-actions">
-                <?php if (!empty($contact_email)): ?>
-                    <a href="mailto:<?php echo esc_attr($contact_email); ?>?subject=Contact formateur %23<?php echo $trainer_id_formatted; ?>" 
-                       class="trpro-btn trpro-btn-primary trpro-btn-large">
-                        <i class="fas fa-envelope"></i>
-                        Contacter par Email
-                    </a>
-                <?php endif; ?>
-                
-                <?php if (!empty($trainer->linkedin_url)): ?>
-                    <a href="<?php echo esc_url($trainer->linkedin_url); ?>" 
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="trpro-btn trpro-btn-outline trpro-btn-large">
-                        <i class="fab fa-linkedin"></i>
-                        Voir LinkedIn
-                    </a>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
-
 <style>
 /* ===== STYLES POUR LES NOUVELLES FONCTIONNALITÉS ===== */
 
-/* Nom anonymisé */
+/* Nom anonymisé (SANS ID) */
 .trpro-trainer-name {
     font-size: 1.25rem;
     font-weight: 700;
     color: #0a2540;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
     text-align: center;
 }
 
-.trpro-trainer-id {
-    font-size: 0.75rem;
-    color: #8b92a6;
-    font-weight: 500;
-    text-align: center;
-    margin-bottom: 8px;
+/* ✅ NOUVEAUX STYLES pour les badges d'expérience */
+.trpro-status-badge {
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    border-radius: 12px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.trpro-badge-junior {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.trpro-badge-intermediaire {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.trpro-badge-senior {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.trpro-badge-expert {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
 }
 
 /* Zones d'intervention */
@@ -493,108 +388,6 @@ $specialty_icons = [
     color: white;
 }
 
-/* Modal améliorée */
-.trpro-modal-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.trpro-modal-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.trpro-modal-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.trpro-modal-avatar-placeholder {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #635bff, #7c73ff);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.5rem;
-}
-
-.trpro-modal-info h4 {
-    margin: 0;
-    color: #0a2540;
-    font-size: 1.25rem;
-    font-weight: 700;
-}
-
-.trpro-modal-info p {
-    margin: 2px 0 0 0;
-    color: #6b7280;
-    font-size: 0.9rem;
-}
-
-.trpro-modal-company {
-    color: #635bff !important;
-    font-weight: 500;
-}
-
-/* Zones dans la modal */
-.trpro-modal-zones {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.trpro-zone-chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #f0f9ff;
-    color: #0369a1;
-    padding: 8px 12px;
-    border-radius: 20px;
-    border: 1px solid #0ea5e9;
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-.trpro-zone-chip i {
-    font-size: 0.8rem;
-}
-
-/* Informations de disponibilité */
-.trpro-availability-info {
-    background: #f8fafc;
-    padding: 16px;
-    border-radius: 8px;
-    border-left: 3px solid #635bff;
-}
-
-.trpro-info-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.trpro-info-item:last-child {
-    margin-bottom: 0;
-}
-
-.trpro-info-item strong {
-    color: #374151;
-}
-
-.trpro-info-item span {
-    color: #6b7280;
-    font-weight: 500;
-}
-
 /* Responsive pour les nouvelles fonctionnalités */
 @media (max-width: 768px) {
     .trpro-intervention-zones {
@@ -604,27 +397,10 @@ $specialty_icons = [
     .trpro-zones-list {
         justify-content: center;
     }
-    
-    .trpro-modal-title {
-        flex-direction: column;
-        text-align: center;
-        gap: 8px;
-    }
-    
-    .trpro-modal-zones {
-        justify-content: center;
-    }
-    
-    .trpro-info-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-    }
 }
 
 /* Animation pour les nouvelles zones */
-.trpro-zone-tag,
-.trpro-zone-chip {
+.trpro-zone-tag {
     animation: fadeInScale 0.3s ease-out;
 }
 
@@ -659,84 +435,253 @@ $specialty_icons = [
 .trpro-trainer-company i {
     font-size: 0.75rem;
 }
+
+/* ✅ Animation des badges d'expérience */
+.trpro-status-badge {
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    50% { 
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* Pause animation au hover */
+.trpro-trainer-card-modern:hover .trpro-status-badge {
+    animation-play-state: paused;
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // ===== GESTION DES MODALS DE PROFIL =====
     const profileButtons = document.querySelectorAll('.trpro-btn-profile');
-    const modalCloses = document.querySelectorAll('.trpro-modal-close');
-    const modalOverlays = document.querySelectorAll('.trpro-modal-overlay');
-
-    // Ouvrir les modals
+    
     profileButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const trainerId = this.dataset.trainerId;
-            const modal = document.getElementById(`trpro-modal-${trainerId}`);
             
-            if (modal) {
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
+            // Charger le profil via AJAX
+            loadTrainerProfile(trainerId);
+        });
+    });
+
+    function loadTrainerProfile(trainerId) {
+        // Afficher un loading
+        showProfileLoadingModal();
+        
+        // Requête AJAX pour récupérer le profil
+        jQuery.ajax({
+            url: trainer_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'get_trainer_profile',
+                nonce: trainer_ajax.nonce,
+                trainer_id: trainerId
+            },
+            success: function(response) {
+                hideProfileLoadingModal();
                 
-                // Animation d'entrée
-                setTimeout(() => {
-                    modal.classList.add('active');
-                }, 10);
-
-                // Analytics tracking
-                if (typeof gtag !== 'undefined') {
-                    gtag('event', 'view_trainer_profile', {
-                        'trainer_id': trainerId,
-                        'event_category': 'engagement'
-                    });
+                if (response.success && response.data) {
+                    showProfileModal(response.data);
+                } else {
+                    showProfileError(response.data?.message || 'Erreur lors du chargement du profil');
                 }
+            },
+            error: function() {
+                hideProfileLoadingModal();
+                showProfileError('Erreur de connexion');
             }
         });
-    });
+    }
 
-    // Fermer les modals
-    modalCloses.forEach(button => {
-        button.addEventListener('click', function() {
-            const trainerId = this.dataset.trainerId;
-            const modal = document.getElementById(`trpro-modal-${trainerId}`);
-            
-            if (modal) {
-                modal.classList.remove('active');
-                
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                    document.body.style.overflow = '';
-                }, 300);
-            }
-        });
-    });
+    function showProfileLoadingModal() {
+        const loadingHTML = `
+            <div class="trpro-modal-overlay active" id="trpro-profile-loading-modal">
+                <div class="trpro-modal-container">
+                    <div class="trpro-modal-content">
+                        <div class="trpro-modal-loading">
+                            <div class="trpro-spinner"></div>
+                            <p>Chargement du profil...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', loadingHTML);
+        document.body.classList.add('modal-open');
+    }
 
-    // Fermer en cliquant sur l'overlay
-    modalOverlays.forEach(overlay => {
-        overlay.addEventListener('click', function(e) {
-            if (e.target === this) {
-                const closeButton = this.querySelector('.trpro-modal-close');
-                if (closeButton) {
-                    closeButton.click();
-                }
-            }
-        });
-    });
-
-    // Fermer avec Escape
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            const activeModal = document.querySelector('.trpro-modal-overlay.active');
-            if (activeModal) {
-                const closeButton = activeModal.querySelector('.trpro-modal-close');
-                if (closeButton) {
-                    closeButton.click();
-                }
-            }
+    function hideProfileLoadingModal() {
+        const modal = document.getElementById('trpro-profile-loading-modal');
+        if (modal) {
+            modal.remove();
         }
-    });
+        document.body.classList.remove('modal-open');
+    }
 
+    function showProfileModal(profileData) {
+        const regions = profileData.intervention_regions || [];
+        const specialties = profileData.specialties || [];
+        
+        // Mapping des badges d'expérience
+        const experienceBadges = {
+            'junior': { label: 'Junior', icon: 'fas fa-seedling', class: 'junior' },
+            'intermediaire': { label: 'Intermédiaire', icon: 'fas fa-chart-line', class: 'intermediaire' },
+            'senior': { label: 'Senior', icon: 'fas fa-award', class: 'senior' },
+            'expert': { label: 'Expert', icon: 'fas fa-crown', class: 'expert' }
+        };
+        
+        const experienceBadge = experienceBadges[profileData.experience_level] || experienceBadges['intermediaire'];
+        
+        const modalHTML = `
+            <div class="trpro-modal-overlay active" id="trpro-profile-modal-${profileData.id}">
+                <div class="trpro-modal-container">
+                    <div class="trpro-modal-header">
+                        <div class="trpro-modal-title">
+                            <div class="trpro-modal-avatar">
+                                ${profileData.photo_url ? 
+                                    `<img src="${profileData.photo_url}" alt="Photo du formateur">` :
+                                    `<div class="trpro-modal-avatar-placeholder"><i class="fas fa-user-graduate"></i></div>`
+                                }
+                                <div class="trpro-modal-badge trpro-badge-${experienceBadge.class}">
+                                    <i class="${experienceBadge.icon}"></i>
+                                    <span>${experienceBadge.label}</span>
+                                </div>
+                            </div>
+                            <div class="trpro-modal-info">
+                                <h4>${escapeHtml(profileData.display_name)}</h4>
+                                <p>Formateur ${experienceBadge.label}</p>
+                                ${profileData.company ? `<p class="trpro-modal-company">${escapeHtml(profileData.company)}</p>` : ''}
+                            </div>
+                        </div>
+                        <button class="trpro-modal-close"><i class="fas fa-times"></i></button>
+                    </div>
+                    
+                    <div class="trpro-modal-content">
+                        ${regions.length > 0 ? `
+                            <div class="trpro-modal-section">
+                                <h5><i class="fas fa-map-marker-alt"></i> Zones d'intervention</h5>
+                                <div class="trpro-modal-zones">
+                                    ${regions.map(region => `
+                                        <span class="trpro-zone-chip">
+                                            <i class="fas fa-map-pin"></i>
+                                            ${escapeHtml(region)}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="trpro-modal-section">
+                            <h5><i class="fas fa-cogs"></i> Compétences techniques</h5>
+                            <div class="trpro-detailed-specialties">
+                                ${specialties.map(specialty => `
+                                    <div class="trpro-specialty-chip">
+                                        <i class="fas fa-cog"></i>
+                                        <span>${escapeHtml(specialty)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        ${profileData.experience ? `
+                            <div class="trpro-modal-section">
+                                <h5><i class="fas fa-briefcase"></i> Expérience professionnelle</h5>
+                                <div class="trpro-experience-full">
+                                    ${escapeHtml(profileData.experience).replace(/\n/g, '<br>')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="trpro-modal-actions">
+                            <a href="mailto:${trainer_ajax.contact_email || 'contact@example.com'}?subject=Contact formateur ${escapeHtml(profileData.display_name)}" 
+                               class="trpro-btn trpro-btn-primary trpro-btn-large">
+                                <i class="fas fa-envelope"></i>
+                                Contacter par Email
+                            </a>
+                            
+                            ${profileData.linkedin_url ? `
+                                <a href="${profileData.linkedin_url}" 
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="trpro-btn trpro-btn-outline trpro-btn-large">
+                                    <i class="fab fa-linkedin"></i>
+                                    Voir LinkedIn
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.classList.add('modal-open');
+        
+        // Ajouter les event listeners pour fermer
+        const modal = document.getElementById(`trpro-profile-modal-${profileData.id}`);
+        const closeBtn = modal.querySelector('.trpro-modal-close');
+        
+        closeBtn.addEventListener('click', function() {
+            modal.remove();
+            document.body.classList.remove('modal-open');
+        });
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                modal.remove();
+                document.body.classList.remove('modal-open');
+            }
+        });
+    }
+
+    function showProfileError(message) {
+        const errorHTML = `
+            <div class="trpro-modal-overlay active" id="trpro-profile-error-modal">
+                <div class="trpro-modal-container">
+                    <div class="trpro-modal-header">
+                        <h4>Erreur</h4>
+                        <button class="trpro-modal-close"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="trpro-modal-content">
+                        <div class="trpro-error-state">
+                            <div class="trpro-error-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <p>${escapeHtml(message)}</p>
+                            <button class="trpro-btn trpro-btn-primary" onclick="document.getElementById('trpro-profile-error-modal').remove(); document.body.classList.remove('modal-open');">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', errorHTML);
+        document.body.classList.add('modal-open');
+    }
+
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+    
     // ===== AMÉLIORATION DES INTERACTIONS =====
     
     // Effet hover sur les cartes
@@ -775,40 +720,6 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.transform = 'translateY(20px)';
         card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
         cardObserver.observe(card);
-    });
-
-    // ===== TRACKING DES INTERACTIONS =====
-    
-    // Track contact buttons
-    const contactButtons = document.querySelectorAll('.trpro-btn-primary[href^="mailto:"]');
-    contactButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const trainerId = this.closest('.trpro-trainer-card-modern')?.dataset.trainerId;
-            
-            if (typeof gtag !== 'undefined' && trainerId) {
-                gtag('event', 'contact_trainer', {
-                    'trainer_id': trainerId,
-                    'method': 'email',
-                    'event_category': 'engagement'
-                });
-            }
-        });
-    });
-
-    // Track LinkedIn links
-    const linkedinLinks = document.querySelectorAll('a[href*="linkedin"]');
-    linkedinLinks.forEach(link => {
-        link.addEventListener('click', function() {
-            const trainerId = this.closest('.trpro-trainer-card-modern')?.dataset.trainerId ||
-                              this.closest('.trpro-modal-overlay')?.id.replace('trpro-modal-', '');
-            
-            if (typeof gtag !== 'undefined' && trainerId) {
-                gtag('event', 'view_linkedin', {
-                    'trainer_id': trainerId,
-                    'event_category': 'external_link'
-                });
-            }
-        });
     });
 });
 </script>

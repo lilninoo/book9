@@ -1,6 +1,6 @@
 <?php
 /**
- * Template formulaire d'inscription CORRIGÉ avec régions d'intervention
+ * Template formulaire d'inscription CORRIGÉ avec expérience et indicatifs téléphoniques
  * 
  * Fichier: public/partials/trainer-registration-form.php
  */
@@ -59,18 +59,62 @@ if (!defined('ABSPATH')) {
                 </div>
             </div>
             
-            <div class="trpro-form-row">
-                <div class="trpro-form-group">
-                    <label for="trpro-email">Email professionnel *</label>
-                    <input type="email" id="trpro-email" name="email" required>
-                    <span class="trpro-error-message"></span>
+            <div class="trpro-form-group">
+                <label for="trpro-email">Email professionnel *</label>
+                <input type="email" id="trpro-email" name="email" required>
+                <span class="trpro-error-message"></span>
+            </div>
+            
+            <!-- ✅ NOUVEAU : Téléphone avec indicatifs pays -->
+            <div class="trpro-form-group">
+                <label for="trpro-phone">Téléphone *</label>
+                <div class="trpro-phone-input-group">
+                    <select id="trpro-country-code" name="country_code" class="trpro-country-code-select">
+                        <option value="+33" data-country="FR">🇫🇷 +33 (France)</option>
+                        <option value="+1" data-country="US">🇺🇸 +1 (États-Unis/Canada)</option>
+                        <option value="+44" data-country="GB">🇬🇧 +44 (Royaume-Uni)</option>
+                        <option value="+49" data-country="DE">🇩🇪 +49 (Allemagne)</option>
+                        <option value="+39" data-country="IT">🇮🇹 +39 (Italie)</option>
+                        <option value="+34" data-country="ES">🇪🇸 +34 (Espagne)</option>
+                        <option value="+41" data-country="CH">🇨🇭 +41 (Suisse)</option>
+                        <option value="+32" data-country="BE">🇧🇪 +32 (Belgique)</option>
+                        <option value="+31" data-country="NL">🇳🇱 +31 (Pays-Bas)</option>
+                        <option value="+43" data-country="AT">🇦🇹 +43 (Autriche)</option>
+                        <option value="+351" data-country="PT">🇵🇹 +351 (Portugal)</option>
+                        <option value="+45" data-country="DK">🇩🇰 +45 (Danemark)</option>
+                        <option value="+46" data-country="SE">🇸🇪 +46 (Suède)</option>
+                        <option value="+47" data-country="NO">🇳🇴 +47 (Norvège)</option>
+                        <option value="+358" data-country="FI">🇫🇮 +358 (Finlande)</option>
+                        <option value="+48" data-country="PL">🇵🇱 +48 (Pologne)</option>
+                        <option value="+420" data-country="CZ">🇨🇿 +420 (République Tchèque)</option>
+                        <option value="+36" data-country="HU">🇭🇺 +36 (Hongrie)</option>
+                        <option value="+30" data-country="GR">🇬🇷 +30 (Grèce)</option>
+                        <option value="+90" data-country="TR">🇹🇷 +90 (Turquie)</option>
+                        <option value="+7" data-country="RU">🇷🇺 +7 (Russie)</option>
+                        <option value="+86" data-country="CN">🇨🇳 +86 (Chine)</option>
+                        <option value="+81" data-country="JP">🇯🇵 +81 (Japon)</option>
+                        <option value="+82" data-country="KR">🇰🇷 +82 (Corée du Sud)</option>
+                        <option value="+91" data-country="IN">🇮🇳 +91 (Inde)</option>
+                        <option value="+55" data-country="BR">🇧🇷 +55 (Brésil)</option>
+                        <option value="+52" data-country="MX">🇲🇽 +52 (Mexique)</option>
+                        <option value="+54" data-country="AR">🇦🇷 +54 (Argentine)</option>
+                        <option value="+56" data-country="CL">🇨🇱 +56 (Chili)</option>
+                        <option value="+57" data-country="CO">🇨🇴 +57 (Colombie)</option>
+                        <option value="+51" data-country="PE">🇵🇪 +51 (Pérou)</option>
+                        <option value="+58" data-country="VE">🇻🇪 +58 (Venezuela)</option>
+                        <option value="+27" data-country="ZA">🇿🇦 +27 (Afrique du Sud)</option>
+                        <option value="+20" data-country="EG">🇪🇬 +20 (Égypte)</option>
+                        <option value="+212" data-country="MA">🇲🇦 +212 (Maroc)</option>
+                        <option value="+216" data-country="TN">🇹🇳 +216 (Tunisie)</option>
+                        <option value="+213" data-country="DZ">🇩🇿 +213 (Algérie)</option>
+                        <option value="+61" data-country="AU">🇦🇺 +61 (Australie)</option>
+                        <option value="+64" data-country="NZ">🇳🇿 +64 (Nouvelle-Zélande)</option>
+                        <option value="custom">✏️ Autre indicatif...</option>
+                    </select>
+                    <input type="text" id="trpro-custom-code" name="custom_country_code" placeholder="+XXX" style="display: none;" class="trpro-custom-code-input">
+                    <input type="tel" id="trpro-phone" name="phone" placeholder="123456789" required>
                 </div>
-                
-                <div class="trpro-form-group">
-                    <label for="trpro-phone">Téléphone *</label>
-                    <input type="tel" id="trpro-phone" name="phone" required>
-                    <span class="trpro-error-message"></span>
-                </div>
+                <span class="trpro-error-message"></span>
             </div>
             
             <div class="trpro-form-group">
@@ -136,7 +180,20 @@ if (!defined('ABSPATH')) {
                 <span class="trpro-error-message" id="trpro-specialties-error"></span>
             </div>
             
-            <!-- ✅ NOUVEAU : Zones d'intervention obligatoires -->
+            <!-- ✅ NOUVEAU : Niveau d'expérience -->
+            <div class="trpro-form-group">
+                <label for="trpro-experience-level">Niveau d'expérience *</label>
+                <select id="trpro-experience-level" name="experience_level" required>
+                    <option value="">Sélectionnez votre niveau</option>
+                    <option value="junior">Junior (moins de 3 ans)</option>
+                    <option value="intermediaire">Intermédiaire (3-7 ans)</option>
+                    <option value="senior">Senior (7-15 ans)</option>
+                    <option value="expert">Expert (15+ ans)</option>
+                </select>
+                <span class="trpro-error-message"></span>
+            </div>
+            
+            <!-- Zones d'intervention -->
             <div class="trpro-form-group">
                 <label>Zones d'intervention * (sélectionnez toutes vos zones)</label>
                 <div class="trpro-regions-grid">
@@ -422,3 +479,114 @@ if (!defined('ABSPATH')) {
         </div>
     </div>
 </div>
+
+<style>
+/* ✅ NOUVEAUX STYLES pour indicatifs téléphoniques */
+.trpro-phone-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.trpro-country-code-select {
+    flex-shrink: 0;
+    min-width: 180px;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+}
+
+.trpro-custom-code-input {
+    flex-shrink: 0;
+    width: 80px;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.trpro-phone-input-group input[type="tel"] {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.trpro-phone-input-group input:focus,
+.trpro-phone-input-group select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Responsive pour le téléphone */
+@media (max-width: 768px) {
+    .trpro-phone-input-group {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .trpro-country-code-select {
+        min-width: 100%;
+    }
+    
+    .trpro-custom-code-input {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ✅ GESTION DES INDICATIFS TÉLÉPHONIQUES
+    const countryCodeSelect = document.getElementById('trpro-country-code');
+    const customCodeInput = document.getElementById('trpro-custom-code');
+    const phoneInput = document.getElementById('trpro-phone');
+    
+    countryCodeSelect.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customCodeInput.style.display = 'block';
+            customCodeInput.required = true;
+            customCodeInput.focus();
+        } else {
+            customCodeInput.style.display = 'none';
+            customCodeInput.required = false;
+            customCodeInput.value = '';
+        }
+    });
+    
+    // Validation du code personnalisé
+    customCodeInput.addEventListener('input', function() {
+        let value = this.value;
+        // S'assurer que ça commence par +
+        if (value && !value.startsWith('+')) {
+            value = '+' + value;
+        }
+        // Garder seulement les chiffres et le +
+        value = value.replace(/[^\d+]/g, '');
+        this.value = value;
+    });
+    
+    // Validation du numéro de téléphone
+    phoneInput.addEventListener('input', function() {
+        // Supprimer tous les caractères non numériques
+        this.value = this.value.replace(/[^\d\s-()]/g, '');
+    });
+    
+    // ✅ GESTION DU NIVEAU D'EXPÉRIENCE
+    const experienceLevel = document.getElementById('trpro-experience-level');
+    experienceLevel.addEventListener('change', function() {
+        const formGroup = this.closest('.trpro-form-group');
+        formGroup.classList.remove('error', 'success');
+        
+        if (this.value) {
+            formGroup.classList.add('success');
+        }
+    });
+});
+</script>
